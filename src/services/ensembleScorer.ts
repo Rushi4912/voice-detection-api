@@ -35,7 +35,7 @@ export class EnsembleScorer {
     const weightedScore = (
       input.acoustic.score * weights.acoustic +
       input.deepLearning.score * weights.deepLearning +
-      input.artifact.score * weights.artifact +
+      input.artifact.score * weights.artifactDetection +
       input.language.score * weights.languageSpecific
     );
     
