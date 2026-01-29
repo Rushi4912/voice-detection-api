@@ -17,39 +17,40 @@ import { MetricsCollector } from '../services/metricsCollector';
 export const detectVoice = async (req: Request, res: Response): Promise<void> => {
   const startTime = Date.now();
   const requestId = req.requestId || 'unknown';
-  
+
   try {
     logger.info(`Starting voice detection - ${requestId}`);
-    
+
     // Extract request data
-    const { audio: rawAudio, language } = req.body;
-    
+    const { audioBase64: rawAudio, audioFormat, language } = req.body;
+
     // Step 1: Sanitize and decode base64 audio
     logger.info(`Step 1: Decoding base64 audio - ${requestId}`);
     const cleanedBase64 = sanitizeBase64Audio(rawAudio);
     const audioBuffer = Buffer.from(cleanedBase64, 'base64');
-    
+
     // Validate audio format
     validateAudioBuffer(audioBuffer);
-    
+
     logger.info(`Audio decoded successfully - ${requestId}`, {
       bufferSize: `${(audioBuffer.length / 1024).toFixed(2)}KB`,
+      format: audioFormat,
     });
-    
+
     // Step 2: Process audio (convert to WAV, extract metadata)
     logger.info(`Step 2: Processing audio - ${requestId}`);
     const audioProcessor = new AudioProcessor();
     const processedAudio = await audioProcessor.process(audioBuffer);
-    
+
     logger.info(`Audio processed - ${requestId}`, {
       duration: `${processedAudio.duration}s`,
       sampleRate: processedAudio.sampleRate,
       channels: processedAudio.channels,
     });
-    
+
     // Step 3: Run parallel detection layers
     logger.info(`Step 3: Running detection layers - ${requestId}`);
-    
+
     const [
       acousticResults,
       deepLearningResults,
@@ -58,19 +59,19 @@ export const detectVoice = async (req: Request, res: Response): Promise<void> =>
     ] = await Promise.all([
       // Layer 1: Acoustic feature analysis
       runAcousticAnalysis(processedAudio, requestId),
-      
+
       // Layer 2: Deep learning classification
       runDeepLearningDetection(processedAudio, requestId),
-      
+
       // Layer 3: AI artifact detection
       runArtifactDetection(processedAudio, requestId),
-      
+
       // Layer 4: Language-specific analysis
       runLanguageSpecificAnalysis(processedAudio, language, requestId),
     ]);
-    
+
     logger.info(`All detection layers completed - ${requestId}`);
-    
+
     // Step 4: Ensemble scoring and final decision
     logger.info(`Step 4: Computing final score - ${requestId}`);
     const ensembleScorer = new EnsembleScorer();
@@ -80,43 +81,18 @@ export const detectVoice = async (req: Request, res: Response): Promise<void> =>
       artifact: artifactResults,
       language: languageResults,
     });
-    
-    // Step 5: Build response
+
+    // Step 5: Build response in required format
     const processingTime = Date.now() - startTime;
-    
+
     const response = {
-      result: finalResult.classification, // "AI_GENERATED" or "HUMAN"
-      confidence: parseFloat(finalResult.confidence.toFixed(4)),
-      analysis: {
-        acoustic: {
-          score: parseFloat(acousticResults.score.toFixed(4)),
-          features: acousticResults.features,
-          anomalies: acousticResults.anomalies,
-        },
-        deepLearning: {
-          score: parseFloat(deepLearningResults.score.toFixed(4)),
-          modelPredictions: deepLearningResults.predictions,
-        },
-        artifact: {
-          score: parseFloat(artifactResults.score.toFixed(4)),
-          detectedArtifacts: artifactResults.artifacts,
-        },
-        languageSpecific: {
-          score: parseFloat(languageResults.score.toFixed(4)),
-          detectedLanguage: languageResults.detectedLanguage,
-          languageConfidence: parseFloat(languageResults.languageConfidence.toFixed(4)),
-        },
-      },
-      metadata: {
-        audioDuration: parseFloat(processedAudio.duration.toFixed(2)),
-        sampleRate: processedAudio.sampleRate,
-        fileSize: `${(audioBuffer.length / 1024).toFixed(2)}KB`,
-      },
-      requestId,
-      processingTime: `${processingTime}ms`,
-      timestamp: new Date().toISOString(),
+      status: 'success' as const,
+      language: languageResults.detectedLanguage,
+      classification: finalResult.classification, // "AI_GENERATED" or "HUMAN"
+      confidenceScore: parseFloat(finalResult.confidence.toFixed(2)),
+      explanation: finalResult.explanation,
     };
-    
+
     // Collect metrics
     MetricsCollector.recordDetection({
       requestId,
@@ -125,23 +101,23 @@ export const detectVoice = async (req: Request, res: Response): Promise<void> =>
       processingTime,
       language: languageResults.detectedLanguage,
     });
-    
+
     logger.info(`Detection completed successfully - ${requestId}`, {
       result: finalResult.classification,
       confidence: finalResult.confidence,
       processingTime: `${processingTime}ms`,
     });
-    
+
     res.status(200).json(response);
-    
+
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    
+
     logger.error(`Detection failed - ${requestId}`, {
       error: error instanceof Error ? error.message : 'Unknown error',
       processingTime: `${processingTime}ms`,
     });
-    
+
     // Collect error metrics
     MetricsCollector.recordError({
       requestId,
@@ -149,7 +125,7 @@ export const detectVoice = async (req: Request, res: Response): Promise<void> =>
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
       processingTime,
     });
-    
+
     throw error;
   }
 };

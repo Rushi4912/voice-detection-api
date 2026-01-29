@@ -11,17 +11,20 @@ const router = Router();
  * 
  * Request body:
  * {
- *   "audio": "base64-encoded-mp3-string",
- *   "language": "English" // Optional
+ *   "audioBase64": "base64-encoded-audio-string",
+ *   "audioFormat": "mp3",  // Supported: mp3, wav, ogg, flac, aac, m4a
+ *   "language": "Tamil"    // Optional: Tamil, English, Hindi, Malayalam, Telugu
  * }
  * 
  * Response:
  * {
- *   "result": "AI_GENERATED" | "HUMAN",
- *   "confidence": 0.95,
+ *   "status": "success",
+ *   "language": "Tamil",
+ *   "classification": "AI_GENERATED" | "HUMAN",
+ *   "confidenceScore": 0.91,
+ *   "explanation": "Unnatural pitch consistency and robotic speech patterns detected",
  *   "analysis": { ... },
- *   "requestId": "req_xxx",
- *   "processingTime": 1234
+ *   "metadata": { ... }
  * }
  */
 router.post('/', validateDetectionRequest, asyncHandler(detectVoice));
