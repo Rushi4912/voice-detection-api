@@ -1,0 +1,1 @@
+export { AppError, ValidationError, AudioProcessingError, ModelInferenceError } from '../middleware/errorHandler';
