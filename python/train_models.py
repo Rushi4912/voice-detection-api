@@ -190,17 +190,37 @@ def train_acoustic_classifier(training_data: List[Tuple[np.ndarray, int]]) -> di
     # Extract features
     X = []
     y = []
+    expected_feature_len = None
     
     for audio, label in tqdm(training_data, desc="Extracting acoustic features"):
         try:
             features = opensmile_detector.extract_features(audio, SAMPLE_RATE)
+            features = np.array(features).flatten()
+            
+            # Determine expected feature length from first valid sample
+            if expected_feature_len is None:
+                expected_feature_len = len(features)
+                logger.info(f"Expected feature length: {expected_feature_len}")
+            
+            # Skip samples with inconsistent feature length
+            if len(features) != expected_feature_len:
+                logger.warning(f"Skipping sample with inconsistent feature length: {len(features)} vs {expected_feature_len}")
+                continue
+            
+            # Handle NaN values - replace with 0, skip if all NaN
+            if np.all(np.isnan(features)):
+                logger.warning("Skipping sample with all NaN features")
+                continue
+            features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+                
             X.append(features)
             y.append(label)
         except Exception as e:
             logger.warning(f"Feature extraction failed: {e}")
             continue
     
-    X = np.array(X)
+    logger.info(f"Successfully extracted features from {len(X)} samples")
+    X = np.array(X, dtype=np.float32)
     y = np.array(y)
     
     logger.info(f"Feature matrix shape: {X.shape}")
