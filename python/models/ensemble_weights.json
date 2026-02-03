@@ -1,0 +1,5 @@
+{
+  "cnn_spectrogram": 0.2,
+  "opensmile_acoustic": 0.30000000000000004,
+  "pragmatic_heuristic": 0.5
+}
