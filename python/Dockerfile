@@ -1,4 +1,5 @@
-# Smaller Python image for Railway (free tier has 4.8GB limit)
+# Python Voice Detection ML Service
+# For Render deployment with root directory set to "python"
 FROM python:3.10-slim-bookworm
 
 WORKDIR /app
@@ -11,11 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy requirements
-COPY python/requirements.txt ./requirements.txt
+# Copy requirements (relative to python/ directory)
+COPY requirements.txt ./requirements.txt
 
-# Install CPU-only PyTorch and other dependencies
-# This significantly reduces image size compared to CUDA version
+# Install CPU-only PyTorch and dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cpu \
@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip cache purge && \
     rm -rf ~/.cache/pip
 
-# Copy application code only (not models - they're downloaded at runtime)
-COPY python/*.py ./
+# Copy application code
+COPY *.py ./
 
 # Create models directory
 RUN mkdir -p models
