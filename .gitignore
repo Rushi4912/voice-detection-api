@@ -40,3 +40,17 @@ temp/
 
 # Docker
 .dockerignore
+# Audio
+*.wav
+*.mp3
+
+# ML models
+*.pt
+*.pth
+*.onnx
+
+# Data
+data/
+datasets/
+cache/
+outputs/
