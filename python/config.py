@@ -6,9 +6,9 @@ load_dotenv()
 class Config:
     """Application configuration"""
     
-    # Server
-    PORT = int(os.getenv('PYTHON_PORT', 5000))
-    HOST = os.getenv('PYTHON_HOST', '0.0.0.0')
+    # Server - Railway sets PORT automatically
+    PORT = int(os.getenv('PORT', os.getenv('PYTHON_PORT', 5000)))
+    HOST = os.getenv('HOST', os.getenv('PYTHON_HOST', '0.0.0.0'))
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
     
     # Model paths
