@@ -1,0 +1,41 @@
+{
+  "acoustic": {
+    "success": true,
+    "train_accuracy": 1.0,
+    "n_samples": 80,
+    "n_features": 73
+  },
+  "cnn": {
+    "success": true,
+    "epochs": 3,
+    "final_loss": 0.002260331137222238,
+    "final_accuracy": 1.0,
+    "history": {
+      "loss": [
+        0.2529072806239128,
+        0.0005030827422160655,
+        0.002260331137222238
+      ],
+      "accuracy": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "ensemble": {
+    "success": true,
+    "best_accuracy": 1.0,
+    "optimal_weights": {
+      "cnn_spectrogram": 0.2,
+      "opensmile_acoustic": 0.30000000000000004,
+      "pragmatic_heuristic": 0.5
+    },
+    "individual_accuracies": {
+      "opensmile_acoustic": 1.0,
+      "cnn_spectrogram": 0.5,
+      "pragmatic_heuristic": 0.5
+    },
+    "n_samples": 20
+  }
+}
