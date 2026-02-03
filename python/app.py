@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import time
 import traceback
+import os
+from functools import wraps
 from typing import Dict, Any
 from config import config
 from logger import logger
@@ -16,6 +18,27 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB
 
 # Request counter for logging
 request_counter = 0
+
+# API Key for authentication (set via environment variable)
+API_KEY = os.getenv('API_KEY', 'sk_test_123456789')
+
+def require_api_key(f):
+    """Decorator to require API key authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('x-api-key') or request.headers.get('X-API-Key')
+        if not api_key:
+            return jsonify({
+                "error": "Missing API key",
+                "code": "UNAUTHORIZED"
+            }), 401
+        if api_key != API_KEY:
+            return jsonify({
+                "error": "Invalid API key",
+                "code": "UNAUTHORIZED"
+            }), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 def create_error_response(message: str, code: str = "ERROR", status: int = 400) -> tuple:
     """Create standardized error response"""
@@ -65,8 +88,22 @@ def health_check():
             "error": str(e)
         }), 503
 
+@app.route('/api/detect', methods=['POST'])
+@require_api_key
+def api_detect():
+    """
+    Main API endpoint for submission (with authentication)
+    This is the endpoint to share for hackathon evaluation
+    """
+    # Reuse the analyze_voice logic
+    return analyze_voice_internal()
+
 @app.route('/analyze', methods=['POST'])
 def analyze_voice():
+    """Internal endpoint for voice analysis (no auth required)"""
+    return analyze_voice_internal()
+
+def analyze_voice_internal():
     """Main endpoint for voice analysis"""
     global request_counter
     request_counter += 1
