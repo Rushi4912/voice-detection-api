@@ -13,25 +13,29 @@ import hashlib
 from pathlib import Path
 
 # Configuration - Update these before deployment
-GITHUB_REPO = "YOUR_GITHUB_USERNAME/voice-detection-api"  # UPDATE THIS
-RELEASE_TAG = "v1.0.0-models"  # UPDATE THIS
+GITHUB_REPO = os.getenv("GITHUB_REPO", "Rushi4912/voice-detection-api")
+RELEASE_TAG = os.getenv("RELEASE_TAG", "v1.0.0-models")
 
 # Model files to download
 MODELS = {
     "resnet_asvspoof.pt": {
         "size_mb": 43,
-        "sha256": None  # Optional: Add checksum for verification
+        "required": True,  # Critical model
+        "sha256": None
     },
     "acoustic_classifier.pkl": {
         "size_mb": 0.5,
+        "required": True,
         "sha256": None
     },
     "acoustic_scaler.pkl": {
         "size_mb": 0.01,
+        "required": True,
         "sha256": None
     },
     "ensemble_weights.json": {
         "size_mb": 0.001,
+        "required": False,  # Can use defaults
         "sha256": None
     }
 }
@@ -120,25 +124,49 @@ def download_models() -> bool:
         print("✅ All models downloaded successfully!")
     else:
         print("⚠️  Some models failed to download")
+        print("   The API will try to run with available models.")
     print("="*60 + "\n")
     
     return all_success
 
 
 def check_models_exist() -> bool:
-    """Check if all required models exist"""
-    for filename in MODELS.keys():
-        if not (MODELS_DIR / filename).exists():
-            return False
+    """Check if all REQUIRED models exist"""
+    for filename, config in MODELS.items():
+        if config.get("required", True):
+            if not (MODELS_DIR / filename).exists():
+                return False
     return True
 
 
+def check_required_models() -> bool:
+    """Check if required models exist for API to function"""
+    required_files = ["resnet_asvspoof.pt", "acoustic_classifier.pkl", "acoustic_scaler.pkl"]
+    return all((MODELS_DIR / f).exists() for f in required_files)
+
+
 if __name__ == "__main__":
+    # Create models directory
+    MODELS_DIR.mkdir(exist_ok=True)
+    
     # Check if models already exist
     if check_models_exist():
         print("✅ All models already present, skipping download")
         sys.exit(0)
     
-    # Download models
+    # Try to download models
+    print(f"📦 Attempting to download models from GitHub Releases...")
+    print(f"   Repository: {GITHUB_REPO}")
+    print(f"   Release: {RELEASE_TAG}")
+    
     success = download_models()
-    sys.exit(0 if success else 1)
+    
+    # Check if we have minimum required models
+    if check_required_models():
+        print("✅ Required models available - API can start")
+        sys.exit(0)
+    else:
+        print("❌ Missing critical models - API cannot start")
+        print("   Please upload models to GitHub Releases or copy to models/ directory")
+        sys.exit(1)
+
